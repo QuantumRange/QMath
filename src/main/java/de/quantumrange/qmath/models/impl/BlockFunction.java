@@ -15,7 +15,7 @@ public class BlockFunction implements QFunction {
 
 	@Override
 	public void setVariable(String name, double value) {
-		// TODO
+		context.put(name, value);
 	}
 
 	@Override
@@ -23,4 +23,11 @@ public class BlockFunction implements QFunction {
 		return root.evaluate(context);
 	}
 
+	@Override
+	public String toString() {
+		return "BlockFunction{" +
+				"context=" + context +
+				", root=" + root +
+				'}';
+	}
 }

@@ -4,5 +4,6 @@ public interface QOperator {
 
 	int getPriority();
 	double evaluate(double left, double right);
+	String toMathString();
 
 }

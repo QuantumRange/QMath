@@ -1,11 +1,15 @@
 package de.quantumrange.qmath.models.impl.block;
 
+import de.quantumrange.qmath.models.BasicOperator;
 import de.quantumrange.qmath.models.Block;
 import de.quantumrange.qmath.models.QOperator;
 import de.quantumrange.qmath.models.impl.MathContext;
 
 import java.util.Arrays;
 import java.util.List;
+
+import static de.quantumrange.qmath.models.BasicOperator.SUBTRACT;
+import static de.quantumrange.qmath.models.impl.MathContext.EMPTY;
 
 public class ArrayBlock extends Block {
 
@@ -24,10 +28,12 @@ public class ArrayBlock extends Block {
 
 	@Override
 	public double evaluate(MathContext context) {
-		double sum = 0.0;
+		if (blocks.length == 0) return Double.NaN;
 
-		for (int i = 0; i < blocks.length; i++) {
-			
+		double sum = blocks[0].evaluate(context);
+
+		for (int i = 1; i < blocks.length; i++) {
+			sum = operators[i - 1].evaluate(sum, blocks[i].evaluate(context));
 		}
 
 		return sum;
@@ -37,8 +43,46 @@ public class ArrayBlock extends Block {
 	public int getVariableCount() {
 		return Arrays.stream(blocks)
 				.mapToInt(Block::getVariableCount)
-				.distinct()
-				.max()
-				.orElse(0);
+				.sum();
+	}
+
+	public Block[] getBlocks() {
+		return blocks;
+	}
+
+	public QOperator[] getOperators() {
+		return operators;
+	}
+
+	@Override
+	public String toString() {
+		if (blocks.length == 0) return "";
+
+		StringBuilder sb = new StringBuilder(blocks[0].toString());
+
+		for (int i = 1; i < blocks.length; i++) {
+			boolean arrayBlock = blocks[i] instanceof ArrayBlock;
+
+			sb.append(operators[i - 1].toMathString());
+
+			if (arrayBlock) sb.append('(');
+			sb.append(blocks[i]);
+			if (arrayBlock) sb.append(')');
+		}
+
+		return sb.toString();
+	}
+
+	public void abbreviate() {
+		for (int i = 1; i < blocks.length; i++) {
+			if (operators[i - 1] instanceof BasicOperator bo &&
+				blocks[i] instanceof NumberBlock nb) {
+				if (bo == SUBTRACT && nb.evaluate(EMPTY) < 0) {
+					blocks[i] = new NumberBlock(-nb.evaluate(EMPTY));
+				}
+
+				operators[i - 1] = BasicOperator.ADD;
+			}
+		}
 	}
 }

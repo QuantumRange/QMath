@@ -2,8 +2,11 @@ package de.quantumrange.qmath.models.impl;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class MathContext {
+
+	public static final MathContext EMPTY = new MathContext();
 
 	private final Map<String, Double> variables;
 
@@ -19,6 +22,13 @@ public class MathContext {
 		return variables.get(variableName);
 	}
 
-	// TODO: Better interaction
+	@Override
+	public String toString() {
+		return '{' +
+				variables.keySet().stream()
+						.map(key -> key + "=" + variables.get(key))
+						.collect(Collectors.joining(",")) +
+				'}';
+	}
 
 }

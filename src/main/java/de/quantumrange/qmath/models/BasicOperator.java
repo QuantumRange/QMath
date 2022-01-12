@@ -2,7 +2,7 @@ package de.quantumrange.qmath.models;
 
 public enum BasicOperator implements QOperator {
 
-	ADD("+", 0),
+	ADD("+", 1),
 	SUBTRACT("-", 1),
 	MULTIPLY("*", 2),
 	DIVIDE("/", 2);
@@ -32,5 +32,10 @@ public enum BasicOperator implements QOperator {
 			case MULTIPLY -> left * right;
 			case DIVIDE -> left / right;
 		};
+	}
+
+	@Override
+	public String toMathString() {
+		return operator;
 	}
 }

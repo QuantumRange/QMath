@@ -8,6 +8,7 @@ import de.quantumrange.qmath.models.QOperator;
 import de.quantumrange.qmath.models.impl.BlockFunction;
 import de.quantumrange.qmath.models.impl.FinalFunction;
 import de.quantumrange.qmath.models.impl.MathContext;
+import de.quantumrange.qmath.models.impl.block.ArrayBlock;
 import de.quantumrange.qmath.models.impl.block.NumberBlock;
 import de.quantumrange.qmath.models.impl.block.VariableBlock;
 import org.jetbrains.annotations.NotNull;
@@ -15,8 +16,11 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
+import static de.quantumrange.qmath.models.impl.MathContext.EMPTY;
 import static java.lang.Math.*;
+import static java.util.Objects.requireNonNullElse;
 
 public class StringParser implements MathParser {
 
@@ -44,7 +48,7 @@ public class StringParser implements MathParser {
 		Block block = parse(expression);
 
 		if (variables.isEmpty()) {
-			return new FinalFunction(block.evaluate(new MathContext()));
+			return new FinalFunction(block.evaluate(EMPTY));
 		}
 
 		return new BlockFunction(block);
@@ -58,8 +62,6 @@ public class StringParser implements MathParser {
 		boolean isNumber = false;
 		List<Block> blocks = new ArrayList<>();
 		List<QOperator> operators = new ArrayList<>();
-
-		System.out.println("> " + str);
 
 		if (debugFlag) {
 			int i = 0;
@@ -77,6 +79,8 @@ public class StringParser implements MathParser {
 
 		int i = -1;
 
+		str += "+0";
+
 		for (char c : str.toCharArray()) {
 			i++;
 			if (c == '(') {
@@ -89,8 +93,9 @@ public class StringParser implements MathParser {
 				depth--;
 
 				if (depth == 0) {
-					parse(buffer.toString());
+					blocks.add(parse(buffer.toString()));
 					buffer = new StringBuilder();
+					continue;
 				}
 			}
 
@@ -114,40 +119,63 @@ public class StringParser implements MathParser {
 
 						blocks.add(new NumberBlock(num));
 						isNumber = false;
+						buffer = new StringBuilder();
+
+						if (operator == null) buffer.append(c);
 					} else {
-						if (variables.contains(buffer.toString())) {
-							blocks.add(new VariableBlock(buffer.toString()));
-							buffer = null;
-						} else {
-							throw new MathException("Variable not found!", i, str);
+						if (operator != null || Character.isDigit(c)) {
+							if (variables.contains(buffer.toString())) {
+								blocks.add(new VariableBlock(buffer.toString()));
+							} else {
+								throw new MathException("Variable '%s' not found!".formatted(buffer.toString()), i, str);
+							}
+
+							buffer = new StringBuilder();
 						}
 					}
 
-					if (operator == null) {
-						if (variables.contains(String.valueOf(c))) {
-							blocks.add(new VariableBlock(String.valueOf(c)));
-							operators.add(BasicOperator.MULTIPLY);
-						} else {
-							throw new MathException("Variable not found!", i, str);
-						}
-					} else {
-						operators.add(operator);
-					}
-
-					buffer = new StringBuilder();
+					operators.add(operator != null ? operator : BasicOperator.MULTIPLY);
 				} else {
 					buffer.append(c);
 				}
 			}
-
-			// TODO
-
-			System.out.println("=======");
-			System.out.println(blocks);
-			System.out.println(operators);
 		}
 
-		return null; // TODO
+		Block b = correct(new ArrayBlock(blocks, operators));
+
+		System.out.println(str + " -> " + b);
+
+		return abbreviate(b);
+	}
+
+	private Block correct(Block b) {
+		if (b instanceof ArrayBlock arr) {
+			Block[] blocks = arr.getBlocks();
+			QOperator[] operators = arr.getOperators();
+
+			for (int i = 0; i < blocks.length; i++) {
+				blocks[i] = correct(blocks[i]);
+			}
+
+
+		}
+		return b;
+	}
+
+	private Block abbreviate(Block b) {
+		if (b instanceof ArrayBlock arr) {
+			if (arr.getVariableCount() == 0) {
+				return new NumberBlock(arr.evaluate(EMPTY));
+			} else {
+				for (int i = 0; i < arr.getBlocks().length; i++) {
+					arr.getBlocks()[i] = abbreviate(arr.getBlocks()[i]);
+				}
+
+				arr.abbreviate();
+			}
+		}
+
+		return b;
 	}
 
 }

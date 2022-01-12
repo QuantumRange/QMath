@@ -21,4 +21,9 @@ public class VariableBlock extends Block {
 	public int getVariableCount() {
 		return 1;
 	}
+
+	@Override
+	public String toString() {
+		return variableName;
+	}
 }
