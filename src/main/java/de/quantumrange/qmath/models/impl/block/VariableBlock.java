@@ -5,12 +5,27 @@ import de.quantumrange.qmath.models.impl.MathContext;
 
 public class VariableBlock extends Block {
 
+	/**
+	 * true = +
+	 * false = -
+	 */
+	private boolean sign;
 	private final String variableName;
 
 	public VariableBlock(String variableName) {
 		this.variableName = variableName;
+		this.sign = true;
 	}
 
+	/**
+	 *
+	 * @param variableName is the variablen name.
+	 * @param sign is the sign of the variable, true is + and false is -.
+	 */
+	public VariableBlock(String variableName, boolean sign) {
+		this.variableName = variableName;
+		this.sign = sign;
+	}
 
 	@Override
 	public double evaluate(MathContext context) {
@@ -24,6 +39,14 @@ public class VariableBlock extends Block {
 
 	@Override
 	public String toString() {
-		return variableName;
+		return (sign ? "" : "-") + variableName;
+	}
+
+	public boolean isSign() {
+		return sign;
+	}
+
+	public void setSign(boolean sign) {
+		this.sign = sign;
 	}
 }

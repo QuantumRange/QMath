@@ -124,13 +124,18 @@ public class StringParser implements MathParser {
 						if (operator == null) buffer.append(c);
 					} else {
 						if (operator != null || Character.isDigit(c)) {
-							if (variables.contains(buffer.toString())) {
-								blocks.add(new VariableBlock(buffer.toString()));
+							String variableStr = buffer.toString();
+							String variableName = variableStr.replaceFirst("-", "");
+
+							if (variables.contains(variableName)) {
+								blocks.add(new VariableBlock(variableName, !variableStr.startsWith("-")));
 							} else {
 								throw new MathException("Variable '%s' not found!".formatted(buffer.toString()), i, str);
 							}
 
 							buffer = new StringBuilder();
+						} else {
+							buffer.append(c);
 						}
 					}
 

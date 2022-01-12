@@ -1,6 +1,5 @@
 package de.quantumrange.qmath.models.impl.block;
 
-import de.quantumrange.qmath.models.BasicOperator;
 import de.quantumrange.qmath.models.Block;
 import de.quantumrange.qmath.models.QOperator;
 import de.quantumrange.qmath.models.impl.MathContext;
@@ -8,22 +7,25 @@ import de.quantumrange.qmath.models.impl.MathContext;
 import java.util.Arrays;
 import java.util.List;
 
-import static de.quantumrange.qmath.models.BasicOperator.SUBTRACT;
-import static de.quantumrange.qmath.models.impl.MathContext.EMPTY;
-
 public class ArrayBlock extends Block {
 
 	private final Block[] blocks;
 	private final QOperator[] operators;
+	private final int[] indices;
 
 	public ArrayBlock(List<Block> blocks, List<QOperator> operators) {
 		this(blocks.toArray(Block[]::new),
 				operators.toArray(QOperator[]::new));
+
+
 	}
 
 	public ArrayBlock(Block[] blocks, QOperator[] operators) {
 		this.blocks = blocks;
 		this.operators = operators;
+		this.indices = new int[blocks.length];
+
+
 	}
 
 	@Override
@@ -74,15 +76,6 @@ public class ArrayBlock extends Block {
 	}
 
 	public void abbreviate() {
-		for (int i = 1; i < blocks.length; i++) {
-			if (operators[i - 1] instanceof BasicOperator bo &&
-				blocks[i] instanceof NumberBlock nb) {
-				if (bo == SUBTRACT && nb.evaluate(EMPTY) < 0) {
-					blocks[i] = new NumberBlock(-nb.evaluate(EMPTY));
-				}
 
-				operators[i - 1] = BasicOperator.ADD;
-			}
-		}
 	}
 }

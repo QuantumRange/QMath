@@ -10,7 +10,7 @@ class StringParserTest {
 
 	@Test
 	void build() {
-		StringParser parser = new StringParser("1+x-5⭐+3x-(6-3*(5-(9x)))");
+		StringParser parser = new StringParser("-x+1+x-5⭐+3x-(6-3*(5-(9x)))");
 
 		parser.variables("⭐", "x");
 
