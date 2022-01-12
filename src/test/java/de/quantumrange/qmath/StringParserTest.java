@@ -10,12 +10,10 @@ class StringParserTest {
 
 	@Test
 	void build() {
-		StringParser parser = new StringParser("-x+1+x-5⭐+3x-(6-3*(5-(9x)))");
-
-		parser.variables("⭐", "x");
-
 		try {
-			QFunction build = parser.build();
+			QFunction build = new StringParser("-x+1+x-5⭐+3x-(6-3*(5-(9x)))")
+					.variables("⭐", "x")
+					.build();
 
 			build.setVariable("x", 20.0);
 			build.setVariable("⭐", 5.0);

@@ -7,7 +7,6 @@ import de.quantumrange.qmath.models.QFunction;
 import de.quantumrange.qmath.models.QOperator;
 import de.quantumrange.qmath.models.impl.BlockFunction;
 import de.quantumrange.qmath.models.impl.FinalFunction;
-import de.quantumrange.qmath.models.impl.MathContext;
 import de.quantumrange.qmath.models.impl.block.ArrayBlock;
 import de.quantumrange.qmath.models.impl.block.NumberBlock;
 import de.quantumrange.qmath.models.impl.block.VariableBlock;
@@ -16,11 +15,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
+import static de.quantumrange.qmath.models.BasicOperator.*;
 import static de.quantumrange.qmath.models.impl.MathContext.EMPTY;
 import static java.lang.Math.*;
-import static java.util.Objects.requireNonNullElse;
 
 public class StringParser implements MathParser {
 
@@ -39,8 +37,9 @@ public class StringParser implements MathParser {
 	}
 
 	@Override
-	public void variables(@NotNull String... names) {
+	public MathParser variables(@NotNull String... names) {
 		variables.addAll(Arrays.asList(names));
+		return this;
 	}
 
 	@Override
@@ -56,13 +55,6 @@ public class StringParser implements MathParser {
 
 	// TODO: Rename?
 	private @NotNull Block parse(@NotNull String str) throws MathException {
-		int depth = 0;
-		StringBuilder buffer = new StringBuilder();
-
-		boolean isNumber = false;
-		List<Block> blocks = new ArrayList<>();
-		List<QOperator> operators = new ArrayList<>();
-
 		if (debugFlag) {
 			int i = 0;
 
@@ -77,73 +69,97 @@ public class StringParser implements MathParser {
 			}
 		}
 
-		int i = -1;
+		boolean isNumber = false;
+		int depth = 0;
+		StringBuilder buffer = new StringBuilder();
 
-		str += "+0";
+		List<Block> blocks = new ArrayList<>();
+		List<QOperator> operators = new ArrayList<>();
+
+		int i = -1;
+		// str += "+0";
+
+		BasicOperator operator = null;
 
 		for (char c : str.toCharArray()) {
 			i++;
-			if (c == '(') {
-				if (depth == 0) buffer = new StringBuilder();
 
+			if (c == '(') {
 				depth++;
 
-				if (depth == 1) continue;
+				if (depth == 1) {
+					buffer = new StringBuilder();
+					continue;
+				}
 			} else if (c == ')') {
 				depth--;
 
 				if (depth == 0) {
 					blocks.add(parse(buffer.toString()));
+					System.out.println("### " + operator);
 					buffer = new StringBuilder();
 					continue;
 				}
-			}
+  			}
 
-			if (depth != 0) {
-				buffer.append(c);
-				continue;
-			}
+			if (depth == 0) {
+				BasicOperator op = valueOfOperator(buffer.toString());
+				if (op != null) {
+					operator = op;
+					buffer = new StringBuilder();
+				} else if ((op = valueOfOperator(String.valueOf(c))) != null && !buffer.isEmpty()) {
+					operator = op;
 
-			if (Character.isDigit(c)) {
-				buffer.append(c);
-				isNumber = true;
-			} else {
-				if (!buffer.isEmpty()) {
-					BasicOperator operator = Arrays.stream(BasicOperator.values())
-							.filter(b -> b.getOperator().equals(String.valueOf(c)))
-							.findFirst()
-							.orElse(null);
+					String variableName = buffer.toString();
+					buffer = new StringBuilder();
+					StringBuilder variableBuffer = new StringBuilder();
 
-					if (isNumber) {
-						double num = Double.parseDouble(buffer.toString());
+					for (char vC : variableName.toCharArray()) {
+						if (Character.isDigit(vC)) buffer.append(vC);
+						else variableBuffer.append(vC);
+					}
 
-						blocks.add(new NumberBlock(num));
-						isNumber = false;
-						buffer = new StringBuilder();
+					try {
+						if (!buffer.isEmpty()) {
+							double num = Double.parseDouble(buffer.toString());
 
-						if (operator == null) buffer.append(c);
-					} else {
-						if (operator != null || Character.isDigit(c)) {
-							String variableStr = buffer.toString();
-							String variableName = variableStr.replaceFirst("-", "");
-
-							if (variables.contains(variableName)) {
-								blocks.add(new VariableBlock(variableName, !variableStr.startsWith("-")));
-							} else {
-								throw new MathException("Variable '%s' not found!".formatted(buffer.toString()), i, str);
+							if (operator == SUBTRACT) {
+								operator = ADD;
+								num *= -1;
 							}
 
-							buffer = new StringBuilder();
+							blocks.add(new NumberBlock(num));
+							operators.add(operator);
+							operator = null;
+						}
+					} catch (Exception e) {
+						throw new MathException("Cant parse number.", i, str);
+					}
+
+					if (!variableBuffer.isEmpty()) {
+						if (variables.contains(variableBuffer.toString())) {
+							if (operator == null) operator = MULTIPLY;
+
+							// TODO
+
+							blocks.add(new VariableBlock(variableBuffer.toString(), operator != SUBTRACT));
+							operators.add(operator == SUBTRACT ? ADD : operator);
+							operator = null;
 						} else {
-							buffer.append(c);
+							throw new MathException("Cant find variable '%s'.".formatted(variableBuffer.toString()), i, str);
 						}
 					}
 
-					operators.add(operator != null ? operator : BasicOperator.MULTIPLY);
-				} else {
-					buffer.append(c);
+					buffer = new StringBuilder();
 				}
 			}
+
+			buffer.append(c);
+
+			System.out.println("===========");
+			System.out.println(buffer + " << " + operator + " << " + c);
+			System.out.println(blocks);
+			System.out.println(operators);
 		}
 
 		Block b = correct(new ArrayBlock(blocks, operators));

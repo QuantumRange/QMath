@@ -5,7 +5,7 @@ import de.quantumrange.qmath.models.QFunction;
 
 public interface MathParser {
 
-	void variables(String... names);
+	MathParser variables(String... names);
 
 	QFunction build() throws MathException;
 

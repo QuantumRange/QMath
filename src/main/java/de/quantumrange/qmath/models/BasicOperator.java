@@ -1,5 +1,7 @@
 package de.quantumrange.qmath.models;
 
+import java.util.Arrays;
+
 public enum BasicOperator implements QOperator {
 
 	ADD("+", 1),
@@ -13,6 +15,14 @@ public enum BasicOperator implements QOperator {
 	BasicOperator(String operator, int priority) {
 		this.operator = operator;
 		this.priority = priority;
+	}
+
+	public static BasicOperator valueOfOperator(String operator) {
+		return Arrays.stream(BasicOperator.values())
+				.filter(s -> s.getOperator().equals(operator))
+				.findFirst()
+				.orElse(null);
+
 	}
 
 	public String getOperator() {
